@@ -14,17 +14,34 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-    - name: Set up JDK 11
+    - name: Check Sonar secrets
+      run: |
+        if [ -z "${{ secrets.SONAR_HOST_URL }}" ] || [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+          echo "ERROR: SONAR_HOST_URL and SONAR_TOKEN secrets are required!"
+          echo "Please add them in: Settings > Secrets and variables > Actions"
+          exit 1
+        fi
+
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '11'
+        java-version: '17'
         distribution: 'temurin'
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '16'
+        node-version: '18'
+
+    - name: Cache Maven packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
 
     - name: Backend - build, test, jacoco and Sonar
       run: |
@@ -32,13 +49,13 @@ jobs:
         cd back
         mvn clean test
         mvn jacoco:report
-        # build sonar command and include project key only if provided
-        CMD="mvn sonar:sonar -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} -Dsonar.login=${{ secrets.SONAR_TOKEN }} -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml -Dsonar.qualitygate.wait=true"
-        if [ -n "${{ secrets.SONAR_PROJECT_KEY_BACKEND }}" ]; then
-          CMD="$CMD -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_BACKEND }}"
-        fi
-        echo "$CMD"
-        eval $CMD
+        mvn sonar:sonar \
+          -Dsonar.projectKey=Davidcardig_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD \
+          -Dsonar.organization=davidcardig \
+          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+          -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+          -Dsonar.qualitygate.wait=true
 
     - name: Frontend - tests and Sonar
       run: |
@@ -46,14 +63,16 @@ jobs:
         cd front
         npm ci
         npm run test -- --watch=false --code-coverage --browsers=ChromeHeadless
-        # prepare sonar-scanner command (use Docker image)
-        CMD="docker run --rm -e SONAR_HOST_URL=${{ secrets.SONAR_HOST_URL }} -e SONAR_LOGIN=${{ secrets.SONAR_TOKEN }} -v \"${{ github.workspace }}/front\":/usr/src -w /usr/src sonarsource/sonar-scanner-cli -Dsonar.login=\$SONAR_LOGIN -Dsonar.host.url=\$SONAR_HOST_URL -Dsonar.sources=src -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info -Dsonar.qualitygate.wait=true"
-        if [ -n "${{ secrets.SONAR_PROJECT_KEY_FRONTEND }}" ]; then
-          CMD="$CMD -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_FRONTEND }}"
-        fi
-        echo "$CMD"
-        eval $CMD
-
-
-
-
+        docker run --rm \
+          -e SONAR_HOST_URL=${{ secrets.SONAR_HOST_URL }} \
+          -e SONAR_TOKEN=${{ secrets.SONAR_TOKEN }} \
+          -v "${{ github.workspace }}/front":/usr/src \
+          -w /usr/src \
+          sonarsource/sonar-scanner-cli \
+            -Dsonar.projectKey=Davidcardig_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD \
+            -Dsonar.organization=davidcardig \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.sources=src \
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+            -Dsonar.qualitygate.wait=true
