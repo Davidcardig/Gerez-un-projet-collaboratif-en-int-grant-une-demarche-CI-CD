@@ -10,7 +10,6 @@ jobs:
   sonar:
     name: SonarQube Analysis (backend + frontend)
     runs-on: ubuntu-latest
-    if: secrets.SONAR_TOKEN != '' && secrets.SONAR_HOST_URL != ''
 
     steps:
     - name: Checkout
@@ -54,6 +53,7 @@ jobs:
         fi
         echo "$CMD"
         eval $CMD
+
 
 
 
