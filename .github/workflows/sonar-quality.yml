@@ -12,63 +12,56 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-    - name: Cache Maven packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
-    - name: SonarCloud Analysis
-      run: |
-        cd back
-        mvn compile sonar:sonar \
-          -Dsonar.projectKey=Davidcardig_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD \
-          -Dsonar.organization=davidcardig \
-          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-          -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+      - name: SonarCloud Analysis
+        run: |
+          cd back
+          mvn compile sonar:sonar \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
   sonar-frontend:
     name: SonarCloud Analysis - Frontend
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
-    - name: Install dependencies
-      run: |
-        cd front
-        npm ci
+      - name: Install dependencies
+        run: |
+          cd front
+          npm ci
 
-    - name: SonarCloud Analysis
-      run: |
-        docker run --rm \
-          -e SONAR_HOST_URL=${{ secrets.SONAR_HOST_URL }} \
-          -e SONAR_TOKEN=${{ secrets.SONAR_TOKEN }} \
-          -v "${{ github.workspace }}/front":/usr/src \
-          -w /usr/src \
-          sonarsource/sonar-scanner-cli \
-            -Dsonar.projectKey=Davidcardig_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD \
-            -Dsonar.organization=davidcardig \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -Dsonar.sources=src
+      - name: SonarCloud Analysis
+        run: |
+          docker run --rm \
+            -e SONAR_HOST_URL=${{ secrets.SONAR_HOST_URL }} \
+            -e SONAR_TOKEN=${{ secrets.SONAR_TOKEN }} \
+            -v "${{ github.workspace }}/front":/usr/src \
+            -w /usr/src \
+            sonarsource/sonar-scanner-cli
