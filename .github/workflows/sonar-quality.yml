@@ -34,8 +34,12 @@ jobs:
         run: |
           cd back
           mvn compile sonar:sonar \
+            -Dsonar.projectKey=Davidcardig_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD \
+            -Dsonar.organization=davidcardig \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.sources=src/main/java \
+            -Dsonar.java.binaries=target/classes
 
   sonar-frontend:
     name: SonarCloud Analysis - Frontend
